@@ -6,8 +6,17 @@ import {
   getDefinedWsWebsocketUrl,
   getIsomorphicWebSocket,
 } from './util';
-import { DEFINED_NFT_SALE_SUBSCRIPTION_GQL } from './gql';
-import type { WebSocketCreator, WebSocketSubscriptionPayload } from './types';
+import {
+  DefinedWebSocketOnCreatedNftEventsSubscriptionData,
+  getDefinedNftSaleSubscriptionGql,
+} from './gql';
+import type {
+  DefinedWebSocketSubscriptionResponse,
+  Sink,
+  SubscribeToNftSalesParams,
+  WebSocketCreator,
+  WebSocketSubscriptionRequest,
+} from './types';
 import { WS_TRANSPORT_PROTOCOL } from './constants';
 
 // TODO(johnrjj) - Minimum Viable Interace
@@ -17,45 +26,23 @@ type IWebSocket = WebSocket;
 class DefinedFiWebSocket {
   private wsCtor: WebSocketCreator;
   public wsLazySingleton: IWebSocket | undefined; // TODO(johnrjj) - Lazy load
-  private isReady: boolean = false;
-  private isReadyPromise: Promise<boolean> | undefined;
 
-  constructor(private apiKey: string, lazyLoad: boolean = false) {
+  constructor(private apiKey: string, lazyLoad: boolean = true) {
+    invariant(this.apiKey, 'DEFINED_API_KEY cannot be null');
     this.wsCtor = getIsomorphicWebSocket();
-
     if (lazyLoad === false) {
-      this.initDefinedFiWebSocket();
+      this._initDefinedFiWebSocket();
     }
   }
 
   getWebSocketUrl = () => {
     const apiKey = this.apiKey;
-    const headerQueryParm = DefinedFiWebSocket.encodeApiKeyForHeader(apiKey);
+    const headerQueryParm = encodeApiKeyToWebsocketAuthHeader(apiKey);
     const wsUrl = getDefinedWsWebsocketUrl(headerQueryParm);
     return wsUrl;
   };
 
-  handleWebSocketOpen = () => {
-    // console.log('websocket connected...');
-  };
-
-  handleWebSocketError = (err: Event) => {
-    // console.log('ws:err', err);
-  };
-
-  handleWebSocketClose = (closeEvent: CloseEvent) => {
-    // console.log('ws:close', closeEvent);
-  };
-
-  handleWebSocketMessage = () => {
-    // todo
-  };
-
-  waitForOpenSocket = () => {
-    // Much better! LOL
-  };
-
-  public close = async (): Promise<boolean> => {
+  public disconnect = async (): Promise<boolean> => {
     // Possible states we can be in when we call this fn:
     // No websocket, a connected websocket we need to disconnect, or an already disconnected websocket
     return new Promise((resolve) => {
@@ -78,67 +65,41 @@ class DefinedFiWebSocket {
 
   /**
    * This has a lot of states we'll need to manage, come back later, this is good for now
+   * I don't like how many returns this has
    * @returns
    */
-  public connect = async (): Promise<boolean> => {
+  public connect = async (): Promise<WebSocket> => {
     return new Promise((resolve) => {
-      if (this.isReady) {
-        return true;
+      if (this.wsLazySingleton?.readyState === 1) {
+        resolve(this.wsLazySingleton);
       }
       if (!this.wsLazySingleton) {
-        this.initDefinedFiWebSocket();
+        this._initDefinedFiWebSocket();
       }
       if (this.wsLazySingleton?.readyState !== 1) {
         this.wsLazySingleton?.addEventListener('open', (_) => {
-          resolve(true);
+          resolve(this.wsLazySingleton!);
         });
       } else {
-        resolve(true);
+        resolve(this.wsLazySingleton);
       }
     });
   };
 
-  private initDefinedFiWebSocket = (): IWebSocket => {
-    // If not already set up, let's bootstrap the websocket
-    if (!this.wsLazySingleton) {
-      // Do bootstrap...
-      const encodedApiKeyHeader = encodeApiKeyToWebsocketAuthHeader(
-        this.apiKey
-      );
-      const websocketApiConnectionString =
-        getDefinedWsWebsocketUrl(encodedApiKeyHeader);
-      this.wsLazySingleton = new this.wsCtor(
-        websocketApiConnectionString,
-        WS_TRANSPORT_PROTOCOL
-      );
-      this.wsLazySingleton.addEventListener(
-        'open',
-        () => this.handleWebSocketOpen
-      );
-      this.wsLazySingleton.addEventListener('error', (err) =>
-        this.handleWebSocketError(err)
-      );
-      this.wsLazySingleton.addEventListener('close', (closeEvent) =>
-        this.handleWebSocketClose(closeEvent)
-      );
-      // Let's strongly type this one...saving for later..
-      // this.wsLazySingleton.addEventListener('message', (msg) => this.handleWebSocketMessage(err))
-      return this.wsLazySingleton;
-    }
-    // Already has been created, just return singleton
-    return this.wsLazySingleton;
-  };
-
-  subscribe = <T>(gql: string) => {
+  public subscribe = async <T>(gql: string, sink: Sink<T>) => {
     // Is Websocket Ready? If not queue
-
-    invariant(this.apiKey, 'DEFINED_API_KEY cannot be null');
+    await this.connect();
+    // Anything below this implies WS is connnected and ready to subscribe
     const subscriptionId = uuidv4();
+    const serializedSubscription = JSON.stringify({
+      query: gql,
+      variables: null,
+    });
 
-    const subscriptionRequestPayload: WebSocketSubscriptionPayload = {
+    const subscriptionRequestRequest: WebSocketSubscriptionRequest = {
       id: subscriptionId,
       payload: {
-        data: 'stringified_gql_goes_here',
+        data: serializedSubscription,
         extensions: {
           authorization: {
             host: 'realtime.api.defined.fi',
@@ -149,28 +110,86 @@ class DefinedFiWebSocket {
       type: 'start',
     };
 
-    // const ws = this.getWs();
-    // ws.send(JSON.stringify(subscriptionRequestPayload));
-    // Now we need to manage subscriptions manually since websockets sucks
+    const handleMessage = (msg: any) => {
+      try {
+        console.log(msg);
+        const json = JSON.parse(
+          msg.data
+        ) as DefinedWebSocketSubscriptionResponse<any>;
+        // Guard: Not the right shape of message, something went wrong and we don't know how to handle it.
+        // Every good message should have at least an 'id'.
+        if (!json.id) {
+          console.warn('Unrecognized websocket message', json.payload.errors);
+          return;
+        }
+        // Doesn't belong to our subscription, return.
+        if (json.id !== subscriptionId) {
+          return;
+        }
+        // Handle error
+        if (json.type === 'error') {
+          console.log('err', json.payload.errors);
+          sink.error(json);
+          return;
+        }
+        // Handle initial subscription ack
+        if (json.type === 'start_ack') {
+          // noop
+          return;
+        }
+        // Otherwise, it's data...pass it to the sink
+        sink.next(json.payload.data);
+        return;
+      } catch (e) {
+        throw e;
+      }
+    };
+    this.wsLazySingleton?.addEventListener('message', handleMessage);
+
+    // Send subscription request
+    this.wsLazySingleton!.send(JSON.stringify(subscriptionRequestRequest));
+
+    // Unsubscribe fn
+    const unsubscribe = () => {
+      this.wsLazySingleton?.removeEventListener('message', handleMessage);
+    };
+    return unsubscribe;
   };
 
-  private generateSubscriptionId = (uid = uuidv4()) => {
-    return uid;
+  public subscribeToNftSales = (
+    subscriptionOptions: SubscribeToNftSalesParams,
+    sink: Sink<DefinedWebSocketOnCreatedNftEventsSubscriptionData>
+  ) => {
+    const gql = getDefinedNftSaleSubscriptionGql(
+      subscriptionOptions.contractAddress,
+      subscriptionOptions.chainId
+    );
+    return this.subscribe<DefinedWebSocketOnCreatedNftEventsSubscriptionData>(
+      gql,
+      sink
+    );
   };
 
-  subscribeToNftSales = (contractAddress: string, chainId: number | string) => {
-    const subscriptionId = this.generateSubscriptionId();
-    // TODO(johnrjj) - Fancy typings...
-    // this.subscribe<T>(DEFINED_NFT_SALE_SUBSCRIPTION_GQL)
+  public subscribeToTokenPriceUpdates = (
+    eventSink: Sink /*<TokenData> guard type here more*/
+  ) => {
+    // const subId = this.subscribe(DEFINED_NFT_SALE_SUBSCRIPTION_GQL, eventSink);
   };
 
-  subscribeToTokenPriceUpdates = () => {
-    const subscriptionId = this.generateSubscriptionId();
-    this.subscribe(DEFINED_NFT_SALE_SUBSCRIPTION_GQL);
-  };
-
-  static encodeApiKeyForHeader = (apiKey: string): string => {
-    return encodeApiKeyToWebsocketAuthHeader(apiKey);
+  private _initDefinedFiWebSocket = (): IWebSocket => {
+    // If not already set up, let's bootstrap the websocket
+    if (this.wsLazySingleton) {
+      return this.wsLazySingleton;
+    }
+    // Do bootstrap...
+    const encodedApiKeyHeader = encodeApiKeyToWebsocketAuthHeader(this.apiKey);
+    const websocketApiConnectionString =
+      getDefinedWsWebsocketUrl(encodedApiKeyHeader);
+    this.wsLazySingleton = new this.wsCtor(
+      websocketApiConnectionString,
+      WS_TRANSPORT_PROTOCOL
+    );
+    return this.wsLazySingleton;
   };
 }
 

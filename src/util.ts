@@ -11,13 +11,15 @@ const btoaIsomorphic = (str: string) => {
   }
 };
 
-const getIsomorphicWebSocket = (customWebSocketImpl?: WebSocketCreator): WebSocketCreator => {
+const getIsomorphicWebSocket = (
+  customWebSocketImpl?: WebSocketCreator
+): WebSocketCreator => {
   if (customWebSocketImpl) {
     return customWebSocketImpl;
   }
   const maybeWebSocketBrowser = getWebSocketBrowser();
   if (maybeWebSocketBrowser) {
-    return maybeWebSocketBrowser
+    return maybeWebSocketBrowser;
   }
   // Non-browser env
   if (typeof window === 'undefined') {
@@ -48,10 +50,10 @@ const encodeApiKeyToWebsocketAuthHeader = (definedApiKey: string) => {
 const sleep = (timeMs: number) => {
   return new Promise((accept, reject) => {
     setTimeout(() => {
-      accept(null)
-    }, timeMs)
-  })
-}
+      accept(null);
+    }, timeMs);
+  });
+};
 
 export {
   btoaIsomorphic,

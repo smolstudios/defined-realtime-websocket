@@ -1,13 +1,17 @@
-import { TEST_GQL_SUB } from '../src/gql';
+import {
+  DefinedWebSocketOnCreatedNftEventsSubscriptionData,
+  getDefinedErc20TokenPriceUpdateGql,
+} from '../src/gql';
 import { DefinedFiWebSocket } from '../src/index';
-import { sleep } from '../src/util';
+import type { Sink } from '../src/types';
+import { encodeApiKeyToWebsocketAuthHeader, sleep } from '../src/util';
+
 const TEST_API_KEY = 'cy7pgfKgsMa8VZKEuDXSt5fvYtEIgxoc8XSz2jbx';
 const EXPECTED_HEADER = `eyJob3N0IjogInJlYWx0aW1lLmFwaS5kZWZpbmVkLmZpIiwgIkF1dGhvcml6YXRpb24iOiAiY3k3cGdmS2dzTWE4VlpLRXVEWFN0NWZ2WXRFSWd4b2M4WFN6MmpieCIgfQ==`;
 
 describe('definedfi-ws', () => {
   it('should base64 encode api key properly', () => {
-    const generatedHeader =
-      DefinedFiWebSocket.encodeApiKeyForHeader(TEST_API_KEY);
+    const generatedHeader = encodeApiKeyToWebsocketAuthHeader(TEST_API_KEY);
     expect(generatedHeader).toBe(EXPECTED_HEADER);
   });
 
@@ -23,14 +27,58 @@ describe('definedfi-ws', () => {
     const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
     await definedWs.connect();
     expect(definedWs.wsLazySingleton?.readyState).toBe(1); // Connected
-    await definedWs.close();
+    await definedWs.disconnect();
     expect(definedWs.wsLazySingleton?.readyState).toBe(3); // Is 3 okay? am i terminating the session correctly?
   });
 
-  it('should bootstrap websocket without error', async () => {
-    // const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
-    // definedWs.close()
-    expect(1).toBe(1);
-    // expect(definedWs).not.toBe(null)
+  it('should connect and subscribe to token price updates successfully', async () => {
+    const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
+
+    let events: any[] = [];
+    const eventSinkStub: Sink<{ foo: 'bar' }> = {
+      next(value) {
+        events.push(value);
+      },
+      error(error) {
+        // noop
+      },
+      complete: () => {
+        // noop
+      },
+    } as const;
+    await definedWs.subscribe(
+      getDefinedErc20TokenPriceUpdateGql(null, null),
+      eventSinkStub
+    );
+    await sleep(2000);
+    await definedWs.disconnect();
+
+    expect(events.length).toBeGreaterThan(0);
+  });
+
+  it('should connect and subscribe to token price updates successfully', async () => {
+    const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
+
+    let events: DefinedWebSocketOnCreatedNftEventsSubscriptionData[] = [];
+    // await definedWs.subscribeToNftSales('0x5af0d9827e0c53e4799bb226655a1de152a425a5', 1, {
+    await definedWs.subscribeToNftSales(
+      {},
+      {
+        next(value) {
+          events.push(value);
+        },
+        error(_) {
+          // noop
+        },
+        complete: () => {
+          // noop
+        },
+      }
+    );
+    await sleep(2000);
+    await definedWs.disconnect();
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0].onCreateNftEvents.address).toBeTruthy();
   });
 });

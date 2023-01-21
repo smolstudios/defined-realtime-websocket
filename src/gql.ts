@@ -1,6 +1,84 @@
-export const DEFINED_NFT_SALE_SUBSCRIPTION_GQL = `
+type FilterTuple = [string, string | number];
+
+const generateSubClause = (tuple: FilterTuple) => {
+  const [key, val] = tuple;
+  const isValNumber = typeof val === 'number';
+  let subfilter = `${key}: "${val}"`;
+  if (isValNumber) {
+    subfilter = `${key}: ${val}`;
+  }
+  return subfilter;
+};
+
+export interface NftSwapEventData {
+  buyHash?: any;
+  maker: string;
+  metadata?: any;
+  price: string;
+  sellHash?: any;
+  taker: string;
+  type: string;
+}
+
+export interface OnCreateNftEvent {
+  id: string;
+  tokenId: string;
+  aggregatorAddress?: any;
+  blockNumber: number;
+  contractAddress: string;
+  eventType: string;
+  exchangeAddress: string;
+  data: NftSwapEventData;
+  taker: string;
+  timestamp: number;
+  numberOfTokens: string;
+  transactionHash: string;
+  logIndex: number;
+  maker: string;
+  networkId: number;
+  totalPriceNetworkBaseToken: string;
+  totalPriceUsd: string;
+  transactionIndex: number;
+  individualPrice: string;
+  individualPriceUsd: string;
+  individualPriceNetworkBaseToken: string;
+  paymentTokenAddress: string;
+  poolAddress?: any;
+  sortKey: string;
+  totalPrice: string;
+}
+
+export interface OnCreateNftEvents {
+  address: string;
+  id: string;
+  networkId: number;
+  events: OnCreateNftEvent[];
+}
+
+export interface DefinedWebSocketOnCreatedNftEventsSubscriptionData {
+  onCreateNftEvents: OnCreateNftEvents;
+}
+
+export const getDefinedNftSaleSubscriptionGql = (
+  contractAddress: string | undefined | null,
+  networkId: number | string | undefined | null
+) => {
+  const filterParams: Array<FilterTuple> = [];
+  if (contractAddress) {
+    filterParams.push(['address', contractAddress]);
+  }
+  if (networkId) {
+    filterParams.push(['networkId', networkId]);
+  }
+  let whereClause = ``;
+  const subclauses = filterParams.map(generateSubClause);
+  if (subclauses.length > 0) {
+    whereClause = `(${subclauses.join(',')})`;
+  }
+
+  return `
 subscription NftSaleEventSubscription {
-  onCreateNftEvents(address: "0xCa7cA7BcC765F77339bE2d648BA53ce9c8a262bD", networkId: 1) {
+  onCreateNftEvents${whereClause} {
     address
     id
     networkId
@@ -42,10 +120,40 @@ subscription NftSaleEventSubscription {
   }
 }
 `;
+};
 
-export const DEFINED_ERC20_UPDATE_PRICE_SUBSCRIPTION_GQL = () => `
-subscription UpdatePrice($address: String, $networkId: Int) {
-    onUpdatePrice(address: $address, networkId: $networkId) {
+export interface OnUpdatePrice {
+  timestamp: number;
+  priceUsd: number;
+  networkId: number;
+  address: string;
+}
+
+export interface DefinedWebSocketPricingData {
+  onUpdatePrice: OnUpdatePrice;
+}
+
+// address: $address, networkId: $networkId)
+export const getDefinedErc20TokenPriceUpdateGql = (
+  contractAddress: string | undefined | null,
+  networkId: number | string | undefined | null
+) => {
+  const filterParams: Array<FilterTuple> = [];
+  if (contractAddress) {
+    filterParams.push(['address', contractAddress]);
+  }
+  if (networkId) {
+    filterParams.push(['networkId', networkId]);
+  }
+  let whereClause = ``;
+  const subclauses = filterParams.map(generateSubClause);
+  if (subclauses.length > 0) {
+    whereClause = `(${subclauses.join(',')})`;
+  }
+
+  return `
+subscription UpdatePrice {
+    onUpdatePrice${whereClause} {
       address
       networkId
       priceUsd
@@ -53,6 +161,4 @@ subscription UpdatePrice($address: String, $networkId: Int) {
     }
   }
 `;
-
-export const TEST_GQL_SUB =
-  '{"query":"subscription MySubscription {\\n  onUpdatePrice {\\n    timestamp\\n    priceUsd\\n    networkId\\n    address\\n  }\\n}","variables":null}';
+};
