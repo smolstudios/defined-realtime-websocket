@@ -1,10 +1,10 @@
 {
-  "name": "defined-realtime-ws",
+  "name": "defined-realtime-websocket",
   "version": "0.0.1",
   "license": "MIT",
   "author": "johnrjj",
   "main": "dist/index.js",
-  "module": "dist/defined-realtime-ws.esm.js",
+  "module": "dist/defined-realtime-websocket.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
@@ -41,11 +41,11 @@
   },
   "size-limit": [
     {
-      "path": "dist/defined-realtime-ws.cjs.production.min.js",
+      "path": "dist/defined-realtime-websocket.cjs.production.min.js",
       "limit": "10 KB"
     },
     {
-      "path": "dist/defined-realtime-ws.esm.js",
+      "path": "dist/defined-realtime-websocket.esm.js",
       "limit": "10 KB"
     }
   ],
