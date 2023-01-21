@@ -1,7 +1,6 @@
-export const DEFAULT_HOST_URI = `realtime.api.defined.fi`
-export const DEFAULT_WEBSOCKET_URI_ROOT = `wss://realtime.api.defined.fi/graphql/realtime`
+export const DEFAULT_HOST_URI = `realtime.api.defined.fi`;
+export const DEFAULT_WEBSOCKET_URI_ROOT = `wss://realtime.api.defined.fi/graphql/realtime`;
 export const WS_TRANSPORT_PROTOCOL = 'graphql-ws';
-
 
 // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
 /**
