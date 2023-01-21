@@ -62,3 +62,20 @@ export interface SubscribeToTokenPriceParams {
   contractAddress?: string;
   chainId?: string | number;
 }
+
+export interface SubscribeToTokenChartParams {
+  // Can specify _either_  specific contractAddress or pairAddress (e.g. uniswap pool address)
+  contractAddressOrPaidAddress: string;
+  chainId: string | number;
+}
+
+export interface SubscribeToTokenSwapParams {
+  // Can specify _either_  specific contractAddress or pairAddress (e.g. uniswap pool address)
+  contractAddressOrPaidAddress: string;
+  chainId: string | number;
+}
+
+/**
+ *
+ *
+ */

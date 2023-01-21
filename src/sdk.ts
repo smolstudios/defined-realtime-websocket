@@ -6,14 +6,21 @@ import {
 } from './util';
 import {
   DefinedWebSocketOnCreatedNftEventsSubscriptionData,
-  DefinedWebSocketPricingData,
+  DefinedWebSocketTokenChartData,
+  DefinedWebSocketTokenPricingData,
+  DefinedWebSocketTokenSwapData,
+  getDefinedErc20TokenChartUpdateGql,
+  getDefinedErc20TokenPriceUpdateGql,
+  getDefinedErc20TokenSwapUpdateGql,
   getDefinedNftSaleSubscriptionGql,
 } from './gql';
 import type {
   DefinedWebSocketSubscriptionResponse,
   Sink,
   SubscribeToNftSalesParams,
+  SubscribeToTokenChartParams,
   SubscribeToTokenPriceParams,
+  SubscribeToTokenSwapParams,
   WebSocketFactory,
   WebSocketSubscriptionRequest,
 } from './types';
@@ -219,13 +226,49 @@ class DefinedRealtimeClient {
    */
   public subscribeToTokenPriceUpdates = (
     subscriptionOptions: SubscribeToTokenPriceParams,
-    sink: Sink<DefinedWebSocketPricingData>
+    sink: Sink<DefinedWebSocketTokenPricingData>
   ) => {
-    const gql = getDefinedNftSaleSubscriptionGql(
+    const gql = getDefinedErc20TokenPriceUpdateGql(
       subscriptionOptions.contractAddress,
       subscriptionOptions.chainId
     );
-    return this.subscribe<DefinedWebSocketPricingData>(gql, sink);
+    return this.subscribe<DefinedWebSocketTokenPricingData>(gql, sink);
+  };
+
+  /**
+   * Subscribes to Token chart update events
+   * https://docs.defined.fi/websockets/tokens/onUpdateAggregateBatch
+   * @param subscriptionOptions Filtering options for token
+   * @param sink Event sink
+   * @returns Unsubscribe function
+   */
+  public subscribeToTokenChartUpdates = (
+    subscriptionOptions: SubscribeToTokenChartParams,
+    sink: Sink<DefinedWebSocketTokenChartData>
+  ) => {
+    const gql = getDefinedErc20TokenChartUpdateGql(
+      subscriptionOptions.contractAddressOrPaidAddress,
+      subscriptionOptions.chainId
+    );
+    return this.subscribe<DefinedWebSocketTokenChartData>(gql, sink);
+  };
+
+  /**
+   * Subscribes to Token swap update events
+   * https://docs.defined.fi/websockets/tokens/onCreateEvents
+   * @param subscriptionOptions Filtering options for token
+   * @param sink Event sink
+   * @returns Unsubscribe function
+   */
+  public subscribeToTokenSwapUpdates = (
+    subscriptionOptions: SubscribeToTokenSwapParams,
+    sink: Sink<DefinedWebSocketTokenSwapData>
+  ) => {
+    const gql = getDefinedErc20TokenSwapUpdateGql(
+      subscriptionOptions.contractAddressOrPaidAddress,
+      subscriptionOptions.chainId
+    );
+    return this.subscribe<DefinedWebSocketTokenSwapData>(gql, sink);
   };
 
   public getWebSocketAuthenticatedConnectionString = () => {
