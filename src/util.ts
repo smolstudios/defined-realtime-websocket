@@ -1,4 +1,4 @@
-import {invariant} from './invariant';
+import { invariant } from './invariant';
 import { getWebSocketBrowser } from './browser';
 import { DEFAULT_HOST_URI, DEFAULT_WEBSOCKET_URI_ROOT } from './constants';
 import { WebSocketFactory } from './types';
@@ -32,9 +32,12 @@ const getIsomorphicWebSocket = (
   return maybeWebSocketBrowser;
 };
 
-const getDefinedWsWebsocketUrl = (headerAuthQueryParam: string) => {
+const getDefinedWsWebsocketUrl = (
+  base64EncodedHeaderAuthQueryParam: string,
+  websocketUrlRoot: string = DEFAULT_WEBSOCKET_URI_ROOT
+) => {
   // TODO(johnrjj) - Customize urls
-  return `${DEFAULT_WEBSOCKET_URI_ROOT}?header=${headerAuthQueryParam}&payload=e30=`;
+  return `${websocketUrlRoot}?header=${base64EncodedHeaderAuthQueryParam}&payload=e30=`;
 };
 
 /**
@@ -42,7 +45,10 @@ const getDefinedWsWebsocketUrl = (headerAuthQueryParam: string) => {
  * @param definedApiKey API key provided by defined.fi
  * @returns
  */
-const encodeApiKeyToWebsocketAuthHeader = (definedApiKey: string, hostRootUri: string = DEFAULT_HOST_URI) => {
+const encodeApiKeyToWebsocketAuthHeader = (
+  definedApiKey: string,
+  hostRootUri: string = DEFAULT_HOST_URI
+) => {
   const payloadToEncode = `{"host": "${hostRootUri}", "Authorization": "${definedApiKey}" }`;
   return btoaIsomorphic(payloadToEncode);
 };

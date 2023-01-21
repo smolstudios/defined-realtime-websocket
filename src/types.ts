@@ -42,7 +42,6 @@ export interface WebSocketFactory {
   readonly OPEN: number;
 }
 
-
 export interface DefinedWebSocketDataPayload<T> {
   data: T;
   errors?: Array<any>;
@@ -55,6 +54,11 @@ export interface DefinedWebSocketSubscriptionResponse<T> {
 }
 
 export interface SubscribeToNftSalesParams {
+  contractAddress?: string;
+  chainId?: string | number;
+}
+
+export interface SubscribeToTokenPriceParams {
   contractAddress?: string;
   chainId?: string | number;
 }

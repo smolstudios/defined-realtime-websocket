@@ -6,12 +6,14 @@ import {
 } from './util';
 import {
   DefinedWebSocketOnCreatedNftEventsSubscriptionData,
+  DefinedWebSocketPricingData,
   getDefinedNftSaleSubscriptionGql,
 } from './gql';
 import type {
   DefinedWebSocketSubscriptionResponse,
   Sink,
   SubscribeToNftSalesParams,
+  SubscribeToTokenPriceParams,
   WebSocketFactory,
   WebSocketSubscriptionRequest,
 } from './types';
@@ -21,16 +23,23 @@ import { DEFAULT_HOST_URI, WS_TRANSPORT_PROTOCOL } from './constants';
 // TODO(johnrjj) - Minimum Viable Interace
 type IWebSocket = WebSocket;
 
+/**
+ * Optional configuration options for DefinedRealtimeClient
+ */
 interface DefinedRealtimeClientConfig {
-  hostUrl?: string
+  hostUrl?: string;
   // lazy load is true by default
-  lazyLoadWebSocketConnection?: boolean
+  lazyLoadWebSocketConnection?: boolean;
 }
 
-// Should this be a class or fn
+/**
+ * Defined Realtime WebSocket client
+ * Use this to listen to realtime data from defined.fi
+ * Visit realtime docs at https://docs.defined.fi/websockets
+ */
 class DefinedRealtimeClient {
   private wsFactory: WebSocketFactory;
-  private hostUrl: string = DEFAULT_HOST_URI
+  private hostUrl: string = DEFAULT_HOST_URI;
   public wsLazySingleton: IWebSocket | undefined; // TODO(johnrjj) - Lazy load
 
   constructor(private apiKey: string, config?: DefinedRealtimeClientConfig) {
@@ -40,7 +49,7 @@ class DefinedRealtimeClient {
       this._initDefinedFiWebSocket();
     }
     if (config?.hostUrl) {
-      this.hostUrl = config.hostUrl
+      this.hostUrl = config.hostUrl;
     }
   }
 
@@ -51,6 +60,10 @@ class DefinedRealtimeClient {
     return wsUrl;
   };
 
+  /**
+   * Disconnects the websocket and all active subscription
+   * @returns
+   */
   public disconnect = async (): Promise<boolean> => {
     // Possible states we can be in when we call this fn:
     // No websocket, a connected websocket we need to disconnect, or an already disconnected websocket
@@ -73,8 +86,8 @@ class DefinedRealtimeClient {
   };
 
   /**
-   * This has a lot of states we'll need to manage, come back later, this is good for now
-   * I don't like how many returns this has
+   * Connect the websocket to the realtime server. Once connected, subscription requests can be sent.
+   * Call disconnect() to disconnect active connection and subscriptions.
    * @returns
    */
   public connect = async (): Promise<WebSocket> => {
@@ -95,7 +108,16 @@ class DefinedRealtimeClient {
     });
   };
 
-  public subscribe = async <T>(gql: string, sink: Sink<T>) => {
+  /**
+   * Subscribe to an arbitrary GQL query
+   * @param gql Valid GQL Subscription. Examples can be found here - https://docs.defined.fi/websockets
+   * @param sink Subscription event sink for consumer
+   * @returns Unsubscribe function. Call to unsubscribe from the original subscription.
+   */
+  public subscribe = async <T>(
+    gql: string,
+    sink: Sink<T>
+  ): Promise<() => void> => {
     // Is Websocket Ready? If not queue
     await this.connect();
     // Anything below this implies WS is connnected and ready to subscribe
@@ -136,7 +158,10 @@ class DefinedRealtimeClient {
         }
         // Handle error
         if (json.type === 'error') {
-          console.log(`Error with subscription ${subscriptionId}`, json.payload.errors);
+          console.log(
+            `Error with subscription ${subscriptionId}`,
+            json.payload.errors
+          );
           sink.error?.(json);
           return;
         }
@@ -164,6 +189,13 @@ class DefinedRealtimeClient {
     return unsubscribe;
   };
 
+  /**
+   * Subscribes to NFT swap events
+   * https://docs.defined.fi/websockets/nfts/onCreateNftEvents
+   * @param subscriptionOptions Filtering options for NFTs
+   * @param sink Event sink
+   * @returns Unsubscribe function
+   */
   public subscribeToNftSales = (
     subscriptionOptions: SubscribeToNftSalesParams,
     sink: Sink<DefinedWebSocketOnCreatedNftEventsSubscriptionData>
@@ -178,18 +210,30 @@ class DefinedRealtimeClient {
     );
   };
 
+  /**
+   * Subscribes to Token price update events
+   * https://docs.defined.fi/websockets/tokens/onUpdatePrice
+   * @param subscriptionOptions Filtering options for token
+   * @param sink Event sink
+   * @returns Unsubscribe function
+   */
   public subscribeToTokenPriceUpdates = (
-    subscriptionOptions: SubscribeToNftSalesParams,
-    sink: Sink<DefinedWebSocketOnCreatedNftEventsSubscriptionData>
+    subscriptionOptions: SubscribeToTokenPriceParams,
+    sink: Sink<DefinedWebSocketPricingData>
   ) => {
     const gql = getDefinedNftSaleSubscriptionGql(
       subscriptionOptions.contractAddress,
       subscriptionOptions.chainId
     );
-    return this.subscribe<DefinedWebSocketOnCreatedNftEventsSubscriptionData>(
-      gql,
-      sink
+    return this.subscribe<DefinedWebSocketPricingData>(gql, sink);
+  };
+
+  public getWebSocketAuthenticatedConnectionString = () => {
+    const encodedApiKeyHeader = encodeApiKeyToWebsocketAuthHeader(
+      this.apiKey,
+      this.hostUrl
     );
+    return getDefinedWsWebsocketUrl(encodedApiKeyHeader);
   };
 
   private _initDefinedFiWebSocket = (): IWebSocket => {
@@ -198,9 +242,8 @@ class DefinedRealtimeClient {
       return this.wsLazySingleton;
     }
     // Do bootstrap...
-    const encodedApiKeyHeader = encodeApiKeyToWebsocketAuthHeader(this.apiKey, this.hostUrl);
     const websocketApiConnectionString =
-      getDefinedWsWebsocketUrl(encodedApiKeyHeader);
+      this.getWebSocketAuthenticatedConnectionString();
     this.wsLazySingleton = new this.wsFactory(
       websocketApiConnectionString,
       WS_TRANSPORT_PROTOCOL

@@ -74,7 +74,6 @@ subscription NftSaleEventSubscription {
 `;
 };
 
-
 export interface NftSwapEventData {
   buyHash?: any;
   maker: string;
@@ -164,4 +163,3 @@ export interface OnUpdatePrice {
 export interface DefinedWebSocketPricingData {
   onUpdatePrice: OnUpdatePrice;
 }
-

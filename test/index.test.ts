@@ -17,7 +17,7 @@ describe('definedfi-ws', () => {
   });
 
   it('should generate correct authenticated websocket url', async () => {
-    const definedWs = new DefinedRealtimeClient(TEST_API_KEY, true);
+    const definedWs = new DefinedRealtimeClient(TEST_API_KEY);
     const websocketUrl = definedWs.getWebSocketUrl();
     expect(websocketUrl).toBe(
       `wss://realtime.api.defined.fi/graphql/realtime?header=${EXPECTED_HEADER}&payload=e30=`
@@ -40,12 +40,12 @@ describe('definedfi-ws', () => {
       next(value) {
         events.push(value);
       },
-      // error(error) {
-      //   // noop
-      // },
-      // complete: () => {
-      //   // noop
-      // },
+      error(error) {
+        // noop
+      },
+      complete: () => {
+        // noop
+      },
     } as const;
     await definedWs.subscribe(
       getDefinedErc20TokenPriceUpdateGql(null, null),
@@ -68,12 +68,12 @@ describe('definedfi-ws', () => {
         next(value) {
           events.push(value);
         },
-        // error(_) {
-        //   // noop
-        // },
-        // complete: () => {
-        //   // noop
-        // },
+        error(_) {
+          // noop
+        },
+        complete: () => {
+          // noop
+        },
       }
     );
     await sleep(2000);
