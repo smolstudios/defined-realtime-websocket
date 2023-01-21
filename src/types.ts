@@ -28,12 +28,12 @@ export interface Sink<T = unknown> {
    * the client can run in Node env too, you should assert the close event
    * type during implementation.
    */
-  error(error: unknown): void;
+  error?(error: unknown): void;
   /** The sink has completed. This function "closes" the sink. */
-  complete(): void;
+  complete?(): void;
 }
 
-export interface WebSocketCreator {
+export interface WebSocketFactory {
   new (url: string | URL, protocols?: string | string[] | undefined): WebSocket;
   prototype: WebSocket;
   readonly CLOSED: number;

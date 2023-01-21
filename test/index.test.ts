@@ -1,10 +1,11 @@
 import {
+  DefinedRealtimeClient,
   DefinedWebSocketOnCreatedNftEventsSubscriptionData,
   getDefinedErc20TokenPriceUpdateGql,
-} from '../src/gql';
-import { DefinedFiWebSocket } from '../src/index';
-import type { Sink } from '../src/types';
-import { encodeApiKeyToWebsocketAuthHeader, sleep } from '../src/util';
+  Sink,
+  encodeApiKeyToWebsocketAuthHeader,
+  sleep,
+} from '../src/index';
 
 const TEST_API_KEY = 'cy7pgfKgsMa8VZKEuDXSt5fvYtEIgxoc8XSz2jbx';
 const EXPECTED_HEADER = `eyJob3N0IjogInJlYWx0aW1lLmFwaS5kZWZpbmVkLmZpIiwgIkF1dGhvcml6YXRpb24iOiAiY3k3cGdmS2dzTWE4VlpLRXVEWFN0NWZ2WXRFSWd4b2M4WFN6MmpieCIgfQ==`;
@@ -16,7 +17,7 @@ describe('definedfi-ws', () => {
   });
 
   it('should generate correct authenticated websocket url', async () => {
-    const definedWs = new DefinedFiWebSocket(TEST_API_KEY, true);
+    const definedWs = new DefinedRealtimeClient(TEST_API_KEY, true);
     const websocketUrl = definedWs.getWebSocketUrl();
     expect(websocketUrl).toBe(
       `wss://realtime.api.defined.fi/graphql/realtime?header=${EXPECTED_HEADER}&payload=e30=`
@@ -24,7 +25,7 @@ describe('definedfi-ws', () => {
   });
 
   it('should connect and disconnect to the websocket endpoint without error', async () => {
-    const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
+    const definedWs = new DefinedRealtimeClient(TEST_API_KEY);
     await definedWs.connect();
     expect(definedWs.wsLazySingleton?.readyState).toBe(1); // Connected
     await definedWs.disconnect();
@@ -32,19 +33,19 @@ describe('definedfi-ws', () => {
   });
 
   it('should connect and subscribe to token price updates successfully', async () => {
-    const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
+    const definedWs = new DefinedRealtimeClient(TEST_API_KEY);
 
     let events: any[] = [];
     const eventSinkStub: Sink<{ foo: 'bar' }> = {
       next(value) {
         events.push(value);
       },
-      error(error) {
-        // noop
-      },
-      complete: () => {
-        // noop
-      },
+      // error(error) {
+      //   // noop
+      // },
+      // complete: () => {
+      //   // noop
+      // },
     } as const;
     await definedWs.subscribe(
       getDefinedErc20TokenPriceUpdateGql(null, null),
@@ -57,7 +58,7 @@ describe('definedfi-ws', () => {
   });
 
   it('should connect and subscribe to token price updates successfully', async () => {
-    const definedWs = new DefinedFiWebSocket(TEST_API_KEY);
+    const definedWs = new DefinedRealtimeClient(TEST_API_KEY);
 
     let events: DefinedWebSocketOnCreatedNftEventsSubscriptionData[] = [];
     // await definedWs.subscribeToNftSales('0x5af0d9827e0c53e4799bb226655a1de152a425a5', 1, {
@@ -67,12 +68,12 @@ describe('definedfi-ws', () => {
         next(value) {
           events.push(value);
         },
-        error(_) {
-          // noop
-        },
-        complete: () => {
-          // noop
-        },
+        // error(_) {
+        //   // noop
+        // },
+        // complete: () => {
+        //   // noop
+        // },
       }
     );
     await sleep(2000);

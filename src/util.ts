@@ -1,7 +1,7 @@
-import invariant from '../node_modules/tiny-invariant/dist/tiny-invariant';
+import {invariant} from './invariant';
 import { getWebSocketBrowser } from './browser';
-import { DEFAULT_WEBSOCKET_URI_ROOT } from './constants';
-import { WebSocketCreator } from './types';
+import { DEFAULT_HOST_URI, DEFAULT_WEBSOCKET_URI_ROOT } from './constants';
+import { WebSocketFactory } from './types';
 
 const btoaIsomorphic = (str: string) => {
   try {
@@ -12,8 +12,8 @@ const btoaIsomorphic = (str: string) => {
 };
 
 const getIsomorphicWebSocket = (
-  customWebSocketImpl?: WebSocketCreator
-): WebSocketCreator => {
+  customWebSocketImpl?: WebSocketFactory
+): WebSocketFactory => {
   if (customWebSocketImpl) {
     return customWebSocketImpl;
   }
@@ -42,13 +42,13 @@ const getDefinedWsWebsocketUrl = (headerAuthQueryParam: string) => {
  * @param definedApiKey API key provided by defined.fi
  * @returns
  */
-const encodeApiKeyToWebsocketAuthHeader = (definedApiKey: string) => {
-  const payloadToEncode = `{"host": "realtime.api.defined.fi", "Authorization": "${definedApiKey}" }`;
+const encodeApiKeyToWebsocketAuthHeader = (definedApiKey: string, hostRootUri: string = DEFAULT_HOST_URI) => {
+  const payloadToEncode = `{"host": "${hostRootUri}", "Authorization": "${definedApiKey}" }`;
   return btoaIsomorphic(payloadToEncode);
 };
 
 const sleep = (timeMs: number) => {
-  return new Promise((accept, reject) => {
+  return new Promise((accept, _reject) => {
     setTimeout(() => {
       accept(null);
     }, timeMs);

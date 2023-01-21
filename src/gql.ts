@@ -10,65 +10,17 @@ const generateSubClause = (tuple: FilterTuple) => {
   return subfilter;
 };
 
-export interface NftSwapEventData {
-  buyHash?: any;
-  maker: string;
-  metadata?: any;
-  price: string;
-  sellHash?: any;
-  taker: string;
-  type: string;
-}
-
-export interface OnCreateNftEvent {
-  id: string;
-  tokenId: string;
-  aggregatorAddress?: any;
-  blockNumber: number;
-  contractAddress: string;
-  eventType: string;
-  exchangeAddress: string;
-  data: NftSwapEventData;
-  taker: string;
-  timestamp: number;
-  numberOfTokens: string;
-  transactionHash: string;
-  logIndex: number;
-  maker: string;
-  networkId: number;
-  totalPriceNetworkBaseToken: string;
-  totalPriceUsd: string;
-  transactionIndex: number;
-  individualPrice: string;
-  individualPriceUsd: string;
-  individualPriceNetworkBaseToken: string;
-  paymentTokenAddress: string;
-  poolAddress?: any;
-  sortKey: string;
-  totalPrice: string;
-}
-
-export interface OnCreateNftEvents {
-  address: string;
-  id: string;
-  networkId: number;
-  events: OnCreateNftEvent[];
-}
-
-export interface DefinedWebSocketOnCreatedNftEventsSubscriptionData {
-  onCreateNftEvents: OnCreateNftEvents;
-}
-
 export const getDefinedNftSaleSubscriptionGql = (
   contractAddress: string | undefined | null,
   networkId: number | string | undefined | null
 ) => {
   const filterParams: Array<FilterTuple> = [];
   if (contractAddress) {
-    filterParams.push(['address', contractAddress]);
+    //  Note: address must be lowercase
+    filterParams.push(['address', contractAddress.toLowerCase()]);
   }
   if (networkId) {
-    filterParams.push(['networkId', networkId]);
+    filterParams.push(['networkId', parseInt(networkId.toString(10), 10)]);
   }
   let whereClause = ``;
   const subclauses = filterParams.map(generateSubClause);
@@ -122,28 +74,67 @@ subscription NftSaleEventSubscription {
 `;
 };
 
-export interface OnUpdatePrice {
+
+export interface NftSwapEventData {
+  buyHash?: any;
+  maker: string;
+  metadata?: any;
+  price: string;
+  sellHash?: any;
+  taker: string;
+  type: string;
+}
+
+export interface OnCreateNftEvent {
+  id: string;
+  tokenId: string;
+  aggregatorAddress?: any;
+  blockNumber: number;
+  contractAddress: string;
+  eventType: string;
+  exchangeAddress: string;
+  data: NftSwapEventData;
+  taker: string;
   timestamp: number;
-  priceUsd: number;
+  numberOfTokens: string;
+  transactionHash: string;
+  logIndex: number;
+  maker: string;
   networkId: number;
+  totalPriceNetworkBaseToken: string;
+  totalPriceUsd: string;
+  transactionIndex: number;
+  individualPrice: string;
+  individualPriceUsd: string;
+  individualPriceNetworkBaseToken: string;
+  paymentTokenAddress: string;
+  poolAddress?: any;
+  sortKey: string;
+  totalPrice: string;
+}
+
+export interface OnCreateNftEvents {
   address: string;
+  id: string;
+  networkId: number;
+  events: OnCreateNftEvent[];
 }
 
-export interface DefinedWebSocketPricingData {
-  onUpdatePrice: OnUpdatePrice;
+export interface DefinedWebSocketOnCreatedNftEventsSubscriptionData {
+  onCreateNftEvents: OnCreateNftEvents;
 }
 
-// address: $address, networkId: $networkId)
 export const getDefinedErc20TokenPriceUpdateGql = (
   contractAddress: string | undefined | null,
   networkId: number | string | undefined | null
 ) => {
   const filterParams: Array<FilterTuple> = [];
   if (contractAddress) {
-    filterParams.push(['address', contractAddress]);
+    //  Note: address must be lowercase
+    filterParams.push(['address', contractAddress.toLowerCase()]);
   }
   if (networkId) {
-    filterParams.push(['networkId', networkId]);
+    filterParams.push(['networkId', parseInt(networkId.toString(10), 10)]);
   }
   let whereClause = ``;
   const subclauses = filterParams.map(generateSubClause);
@@ -162,3 +153,15 @@ subscription UpdatePrice {
   }
 `;
 };
+
+export interface OnUpdatePrice {
+  timestamp: number;
+  priceUsd: number;
+  networkId: number;
+  address: string;
+}
+
+export interface DefinedWebSocketPricingData {
+  onUpdatePrice: OnUpdatePrice;
+}
+
