@@ -14,8 +14,6 @@ const getWebSocketBrowser = (): WebSocketFactory | undefined => {
     ws = global.WebSocket || (global as any).MozWebSocket;
   } else if (typeof window !== 'undefined') {
     ws = window.WebSocket || (window as any).MozWebSocket;
-  } else if (typeof self !== 'undefined') {
-    ws = self.WebSocket || (self as any).MozWebSocket;
   }
   return ws;
 };

@@ -433,7 +433,7 @@ export const getDefinedErc20TokenChartUpdateGql = (
 
   return `
   subscription CreateEvents {
-    onCreateEvents(id: $id) {
+    onCreateEvents${whereClause} {
       events {
         address
         baseTokenPrice
