@@ -1,5 +1,4 @@
-![Defined Banner](./logo.png)
-
+![Defined Banner](./logo.jpg)
 
 # Defined.fi Realtime Websocket SDK
 
