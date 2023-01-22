@@ -1,6 +1,6 @@
 # Defined.fi Realtime Websocket SDK
 
-TypeScript library for interacting with [Defined.fi](https://defined.fi)'s realtime websockets.
+TypeScript library for interacting with [Defined.fi](https://defined.fi)'s realtime websockets. Access **realtime** DEX trades, NFT trades, mints, burns, and pricing updates across every popular chain via Defined via WebSocket subscriptions in your app or backend.
 
 ![Defined Banner](./banner.jpg)
 
