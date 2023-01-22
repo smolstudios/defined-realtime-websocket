@@ -7,6 +7,7 @@ import {
   sleep,
 } from '../src/index';
 
+// Do not use this key in production, it is a test key and will probably be banned soon.
 const TEST_API_KEY = 'cy7pgfKgsMa8VZKEuDXSt5fvYtEIgxoc8XSz2jbx';
 const EXPECTED_HEADER = `eyJob3N0IjogInJlYWx0aW1lLmFwaS5kZWZpbmVkLmZpIiwgIkF1dGhvcml6YXRpb24iOiAiY3k3cGdmS2dzTWE4VlpLRXVEWFN0NWZ2WXRFSWd4b2M4WFN6MmpieCIgfQ==`;
 
