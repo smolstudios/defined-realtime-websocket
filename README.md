@@ -1,6 +1,10 @@
+![Defined logo](./logo.png)
+
 # Defined.fi Realtime Websocket SDK
 
 TypeScript library for interacting with Defined.fi's realtime websockets.
+
+![Defined Banner](./banner.png)
 
 This library is isomorphic, working on both client and server. Client uses the built-in browser WebSocket, and server will default to the [`ws`](https://github.com/websockets/ws) package.
 
@@ -189,7 +193,3 @@ MIT. Do whatever.
 ## Contributing
 
 Gladly accept PRs and feedback via GitHub.
-
-```
-
-```
