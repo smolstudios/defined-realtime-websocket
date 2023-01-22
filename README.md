@@ -1,8 +1,9 @@
-![Defined logo](./logo.jpg)
+![Defined Banner](./logo.png)
+
 
 # Defined.fi Realtime Websocket SDK
 
-TypeScript library for interacting with Defined.fi's realtime websockets.
+TypeScript library for interacting with [Defined.fi](https://defined.fi)'s realtime websockets.
 
 ![Defined Banner](./banner.jpg)
 
