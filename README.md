@@ -1,103 +1,195 @@
-# DTS User Guide
+# Defined.fi Realtime Websocket SDK
 
-Congrats! You just saved yourself hours of work by bootstrapping this project with DTS. Let’s get you oriented with what’s here and how to use it.
+TypeScript library for interacting with Defined.fi's realtime websockets.
 
-> This DTS setup is meant for developing libraries (not apps!) that can be published to NPM. If you’re looking to build a Node app, you could use `ts-node-dev`, plain `ts-node`, or simple `tsc`.
+This library is isomorphic, working on both client and server. Client uses the built-in browser WebSocket, and server will default to the [`ws`](https://github.com/websockets/ws) package.
 
-> If you’re new to TypeScript, checkout [this handy cheatsheet](https://devhints.io/typescript)
+## Installation
 
-## Commands
+defined-realtime-websocket can be used both client-side and server-side.
 
-DTS scaffolds your new library inside `/src`.
-
-To run DTS, use:
+To install defined-realtime-websocket, use:
 
 ```bash
-npm start # or yarn start
+npm install defined-realtime-websocket
+# or yarn add defined-realtime-websocket
+# or pnpm i defined-realtime-websocke
 ```
 
-This builds to `/dist` and runs the project in watch mode so any edits you save inside `src` causes a rebuild to `/dist`.
+## Usage
 
-To do a one-off build, use `npm run build` or `yarn build`.
+> If you’re new to Defined.fi's API, or need an API key, checkout [their docs to get started](https://docs.defined.fi/)
 
-To run tests, use `npm test` or `yarn test`.
+### Configuration
 
-## Configuration
+Import and instantiate the client with your defined API key. If you don't have an API key, you can request one in Defined.fi's Discord
 
-Code quality is set up for you with `prettier`, `husky`, and `lint-staged`. Adjust the respective fields in `package.json` accordingly.
+```ts
+import { DefinedRealtimeClient } from 'defined-realtime-websocket';
 
-### Jest
+const DEFINED_API_KEY = '1234...7890';
 
-Jest tests are set up to run with `npm test` or `yarn test`.
-
-### Bundle Analysis
-
-[`size-limit`](https://github.com/ai/size-limit) is set up to calculate the real cost of your library with `npm run size` and visualize the bundle with `npm run analyze`.
-
-#### Setup Files
-
-This is the folder structure we set up for you:
-
-```txt
-/src
-  index.ts        # EDIT THIS
-/test
-  index.test.ts   # EDIT THIS
-.gitignore
-package.json
-README.md         # EDIT THIS
-tsconfig.json
+const definedWs = new DefinedRealtimeClient(MY_DEFINED_API_KEY);
 ```
 
-### Rollup
+That's it for set up.
 
-DTS uses [Rollup](https://rollupjs.org) as a bundler and generates multiple rollup configs for various module formats and build settings. See [Optimizations](#optimizations) for details.
+Now let's subscribe to a realtime update of some kind.
 
-### TypeScript
+First we'll need an subscription handler to handle incoming websocket messages and updates. A subscription handler is just a JavaScript object with three functions attached to it: `next(nextVal => void)`, `error(err => void)`, and `complete(() => void)`. This is based off the Apollo and other GraphQL subscription event sink patterns.
 
-`tsconfig.json` is set up to interpret `dom` and `esnext` types, as well as `react` for `jsx`. Adjust according to your needs.
-
-## Continuous Integration
-
-### GitHub Actions
-
-Two actions are added by default:
-
-- `main` which installs deps w/ cache, lints, tests, and builds on all pushes against a Node and OS matrix
-- `size` which comments cost comparison of your library on every pull request using [`size-limit`](https://github.com/ai/size-limit)
-
-## Optimizations
-
-Please see the main `dts` [optimizations docs](https://github.com/weiran-zsd/dts-cli#optimizations). In particular, know that you can take advantage of development-only optimizations:
-
-```js
-// ./types/index.d.ts
-declare var __DEV__: boolean;
-
-// inside your code...
-if (__DEV__) {
-  console.log('foo');
+```tsx
+const subscriptionHandler = {
+  next: (nextVal) {
+    // Save the incoming websocket data somewhere in your application
+  },
+  error: (err) {
+    // Handle a websocket error in your application
+  },
+  complete: () {
+    // The subscription is done/complete and there will be no more events sent.
+  }
 }
 ```
 
-You can also choose to install and use [invariant](https://github.com/weiran-zsd/dts-cli#invariant) and [warning](https://github.com/weiran-zsd/dts-cli#warning) functions.
+## Available Subscriptions
 
-## Module Formats
+### `subscribeToTokenPriceUpdates`
 
-CJS, ESModules, and UMD module formats are supported.
+Latest price data.
 
-The appropriate paths are configured in `package.json` and `dist/index.js` accordingly. Please report if any issues are found.
+```tsx
+const unsub = definedWs.subscribeToTokenPriceUpdates(
+  subscriptionHandler,
+  // Optional filter object
+  {
+    contractAddress: '0x1234...',
+    chainId: 1,
+  }
+);
+```
 
-## Named Exports
+### `subscribeToTokenChartUpdates`
 
-Per Palmer Group guidelines, [always use named exports.](https://github.com/palmerhq/typescript#exports) Code split inside your React app instead of your React library.
+Data you need to update your charts. (Supports TradingView format output).
 
-## Including Styles
+```tsx
+const unsub = definedWs.subscribeToTokenChartUpdates(
+  subscriptionHandler,
+  // Optional filter object
+  {
+    contractAddress: '0x1234...',
+    chainId: 1,
+  }
+);
+```
 
-There are many ways to ship styles, including with CSS-in-JS. DTS has no opinion on this, configure how you like.
+### `subscribeToTokenSwapUpdates`
 
-For vanilla CSS, you can include it at the root directory and add it to the `files` section in your `package.json`, so that it can be imported separately by your users and run through their bundler's loader.
+Latest transaction events.
 
-## Publishing to NPM
+```tsx
+const unsub = definedWs.subscribeToTokenSwapUpdates(
+  subscriptionHandler,
+  // Optional filter object
+  {
+    contractAddress: '0x1234...',
+    chainId: 1,
+  }
+);
+```
 
-We recommend using [np](https://github.com/sindresorhus/np).
+### `subscribeToNftSales`
+
+Latest nft transaction events.
+
+```tsx
+const unsub = definedWs.subscribeToNftSales(
+  subscriptionHandler,
+  // Optional filter object
+  {
+    contractAddress: '0x1234...',
+    chainId: 1,
+  }
+);
+```
+
+### `subscribe`
+
+If the pre-built subscriptions don't work, you can always use own custom GQL.
+
+Create your own GQL subscription.
+
+```tsx
+// Custom GQL for $LINK mainnet price updates
+const customGql = `
+subscription UpdatePrice($address: String, $networkId: Int) {
+  onUpdatePrice(address: "0x514910771af9ca656af840dff83e8264ecf986ca", networkId: 1) {
+    address
+    networkId
+    priceUsd
+    timestamp
+  }
+}`;
+
+// Add the typing
+interface TokenPricingGqlData {
+  onUpdatePrice: {
+    timestamp: number;
+    priceUsd: number;
+    networkId: number;
+    address: string;
+  };
+}
+
+// Subscribe to the custom GQL and add in the type for full type-safety
+const unsub = definedWs.subscribe<TokenPricingGqlData>(
+  customGql,
+  subscriptionHandler
+);
+```
+
+## Full example
+
+Let's get all realtime trades for the Milady NFT collection.
+
+```tsx
+import { DefinedRealtimeClient } from 'defined-realtime-websocket';
+
+const definedWs = new DefinedRealtimeClient(API_KEY);
+
+await definedWs.subscribeToNftSales(
+  // Filter (optional)
+  {
+    // Milady
+    contractAddress: '0x5af0d9827e0c53e4799bb226655a1de152a425a5',
+    // Mainnet
+    chainId: 1,
+  },
+  // Subscription handle / event sink
+  {
+    next(nftTxData) {
+      console.log(nftTxData.onCreateNftEvents.address)
+    },
+    error(_) {
+      // noop
+    },
+    complete: () {
+      // noop
+    },
+  }
+);
+
+```
+
+## License
+
+MIT. Do whatever.
+
+## Contributing
+
+Gladly accept PRs and feedback via GitHub.
+
+```
+
+```
