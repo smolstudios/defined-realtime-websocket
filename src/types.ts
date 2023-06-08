@@ -49,7 +49,7 @@ export interface DefinedWebSocketDataPayload<T> {
 
 export interface DefinedWebSocketSubscriptionResponse<T> {
   id: string;
-  type: 'data' | 'start_ack' | 'error';
+  type: 'data' | 'start_ack' | 'error' | 'ka' | 'complete';
   payload: DefinedWebSocketDataPayload<T>;
 }
 

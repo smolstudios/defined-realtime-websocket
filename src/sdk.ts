@@ -155,7 +155,7 @@ class DefinedRealtimeClient {
         ) as DefinedWebSocketSubscriptionResponse<any>;
         // Guard: Not the right shape of message, something went wrong and we don't know how to handle it.
         // Every good message should have at least an 'id'.
-        if (!json.id) {
+        if (!json.id && json.type !== 'ka') {
           console.warn('Unrecognized websocket message', json.payload.errors);
           return;
         }

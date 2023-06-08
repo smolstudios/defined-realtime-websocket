@@ -28,9 +28,11 @@ describe('definedfi-ws', () => {
   it('should connect and disconnect to the websocket endpoint without error', async () => {
     const definedWs = new DefinedRealtimeClient(TEST_API_KEY);
     await definedWs.connect();
-    expect(definedWs.wsLazySingleton?.readyState).toBe(1); // Connected
+    expect(definedWs.wsLazySingleton?.readyState).toBe(1); // OPEN
     await definedWs.disconnect();
-    expect(definedWs.wsLazySingleton?.readyState).toBe(3); // Is 3 okay? am i terminating the session correctly?
+    expect(definedWs.wsLazySingleton?.readyState).toBe(
+      definedWs.wsLazySingleton?.CLOSED
+    );
   });
 
   it('should connect and subscribe to token price updates successfully', async () => {
